@@ -11,9 +11,9 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4-mini',  // GPT-4-mini 모델 사용
     stream: true,
-    messages,
+    messages: messages,
   });
 
   const stream = OpenAIStream(response);
