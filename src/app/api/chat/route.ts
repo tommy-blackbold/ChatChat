@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     return new StreamingTextResponse(stream);
   } catch (error) {
     console.error('Error in API route:', error);
-    return NextResponse.json({ error: 'An error occurred: ' + error.message }, { status: 500 });
+    // error를 명시적으로 Error 타입으로 캐스팅
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'An error occurred: ' + errorMessage }, { status: 500 });
   }
 }
