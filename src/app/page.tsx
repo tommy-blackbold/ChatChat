@@ -1,6 +1,5 @@
 'use client';  // 이 줄을 추가합니다.
 
-import { useState } from 'react';
 import { useChat } from 'ai/react';
 
 export default function Home() {
