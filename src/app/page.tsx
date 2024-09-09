@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
-import { useChat } from 'ai/react';
+import { useChat, Message } from 'ai/react';
 import ReactMarkdown from 'react-markdown';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, setInput } = useChat({
-    api: '/api/chat',  // 이 부분이 정확한지 확인
+  const { messages, append } = useChat({
+    api: '/api/chat',
     onResponse: () => {
       setIsLoading(false);
     },
@@ -20,7 +21,7 @@ export default function Home() {
     onError: (error) => {
       console.error('Chat error:', error);
       setIsLoading(false);
-      alert('오류가 발생했습니다: ' + error.message);
+      alert('채팅 오류가 발생했습니다: ' + error.message);
     },
   });
 
@@ -36,13 +37,36 @@ export default function Home() {
     textareaRef.current?.focus();
   }, []);
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  // 입력값이 변경될 때마다 textarea의 값을 동기화합니다.
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.value = inputValue;
+    }
+  }, [inputValue]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
+    if (inputValue.trim() && !isLoading) {
       setIsLoading(true);
-      const currentInput = input.trim();
-      setInput(''); // 입력 필드를 즉시 초기화
-      handleSubmit(e, { data: { content: currentInput } });
+      const currentInput = inputValue.trim();
+      
+      // 입력값을 비우는 작업을 비동기적으로 처리합니다.
+      setTimeout(() => {
+        setInputValue('');
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.value = '';
+          }
+        });
+      }, 0);
+
+      const userMessage: Message = { role: 'user', content: currentInput };
+      await append(userMessage);
+      setIsLoading(false);
     }
   };
 
@@ -65,24 +89,24 @@ export default function Home() {
             </span>
           </div>
         ))}
-        {isLoading && <div className="text-center">로딩 중...</div>}
+        {isLoading && <div className="text-center">처리 중...</div>}
         <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={handleFormSubmit} className="flex">
+      <form onSubmit={handleFormSubmit} className="flex flex-col mb-4">
         <textarea
           ref={textareaRef}
-          value={input}
+          value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요..."
-          className="flex-1 p-2 border rounded-l"
-          rows={1}
+          className="w-full p-2 border rounded mb-2"
+          rows={3}
         />
         <button 
           type="submit" 
-          className="bg-blue-500 text-white p-2 rounded-r"
-          disabled={isLoading || !input.trim()}
+          className="bg-blue-500 text-white p-2 rounded"
+          disabled={isLoading || !inputValue.trim()}
         >
           {isLoading ? '전송 중...' : '전송'}
         </button>
