@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     console.log('Received messages:', messages);
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-3.5-turbo',
       stream: true,
       messages,
     });
@@ -21,6 +21,6 @@ export async function POST(req: Request) {
     return new StreamingTextResponse(stream);
   } catch (error) {
     console.error('Error in API route:', error);
-    return NextResponse.json({ error: 'An error occurred' }, { status: 500 });
+    return NextResponse.json({ error: 'An error occurred: ' + error.message }, { status: 500 });
   }
 }
