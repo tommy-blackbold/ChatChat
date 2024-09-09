@@ -10,7 +10,7 @@ export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages, input, handleInputChange, handleSubmit, setInput } = useChat({
-    api: '/api/chat',
+    api: '/api/chat',  // 이 부분이 정확한지 확인
     onResponse: () => {
       setIsLoading(false);
     },

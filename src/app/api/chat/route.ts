@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-mini',  // GPT-4-mini 모델 사용
+    model: 'gpt-3.5-turbo',  // gpt-4-mini 대신 사용 가능한 모델로 변경
     stream: true,
     messages: messages,
   });
