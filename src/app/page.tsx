@@ -37,13 +37,6 @@ export default function Home() {
     textareaRef.current?.focus();
   }, []);
 
-  // 입력값이 변경될 때마다 textarea의 값을 동기화합니다.
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.value = inputValue;
-    }
-  }, [inputValue]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
   };
@@ -53,16 +46,10 @@ export default function Home() {
     if (inputValue.trim() && !isLoading) {
       setIsLoading(true);
       const currentInput = inputValue.trim();
-      
-      // 입력값을 비우는 작업을 비동기적으로 처리합니다.
-      setTimeout(() => {
-        setInputValue('');
-        requestAnimationFrame(() => {
-          if (textareaRef.current) {
-            textareaRef.current.value = '';
-          }
-        });
-      }, 0);
+      setInputValue(''); // 입력값을 즉시 비웁니다.
+      if (textareaRef.current) {
+        textareaRef.current.value = ''; // DOM에서도 즉시 비웁니다.
+      }
 
       const userMessage: Message = { role: 'user', content: currentInput };
       await append(userMessage);

@@ -3,7 +3,7 @@ import { IncomingForm } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
-export const config = {
+export const routeSegmentConfig = {
   api: {
     bodyParser: false,
   },
