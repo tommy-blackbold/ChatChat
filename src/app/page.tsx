@@ -14,12 +14,12 @@ export default function Home() {
     onError: (error) => {
       console.error('Chat error:', error);
       setIsLoading(false);
-      // 사용자에게 오류 메시지 표시
       alert('오류가 발생했습니다: ' + error.message);
     },
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,37 +29,46 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    handleSubmit(e);
+    if (input.trim()) {
+      setIsLoading(true);
+      handleSubmit(e);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+      if (input.trim()) {
+        onSubmit(e as any);
+      }
     }
   };
 
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">ChatGPT 클론</h1>
+      <h1 className="text-2xl font-bold mb-4">ChatChat</h1>
       
-      <div className="flex-1 overflow-y-auto mb-4">
-        {messages.map((message, i) => (
+      <div className="flex-1 overflow-y-auto mb-4 flex flex-col-reverse">
+        <div ref={messagesEndRef} />
+        {messages.slice().reverse().map((message, i) => (
           <div key={i} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-              <ReactMarkdown>{message.content.replace(/(?<!\n)\.\s/g, '.\n').replace(/([.!?])\s/g, '$1\n')}</ReactMarkdown>
+            <span className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'} message`}>
+              <ReactMarkdown>{message.content}</ReactMarkdown>
             </span>
           </div>
         ))}
-        {isLoading && <div className="text-center">로딩 중...</div>}
-        <div ref={messagesEndRef} />
+        {isLoading && <div className="text-center mb-4">로딩 중...</div>}
       </div>
       
       <form onSubmit={onSubmit} className="flex">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
