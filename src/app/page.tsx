@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useChat } from 'ai/react';
 import ReactMarkdown from 'react-markdown';
 
@@ -36,22 +36,20 @@ export default function Home() {
     textareaRef.current?.focus();
   }, []);
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
       setIsLoading(true);
       const currentInput = input.trim();
       setInput(''); // 입력 필드를 즉시 초기화
-      setTimeout(() => {
-        handleSubmit(e, { data: { content: currentInput } });
-      }, 0);
+      handleSubmit(e, { data: { content: currentInput } });
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleFormSubmit(e as any);
+      handleFormSubmit(e as unknown as FormEvent<HTMLFormElement>);
     }
   };
 
