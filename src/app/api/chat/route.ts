@@ -8,14 +8,26 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  if (req.method === 'OPTIONS') {
+    return new Response('OK', { status: 200 });
+  }
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',  // gpt-4-mini 대신 사용 가능한 모델로 변경
-    stream: true,
-    messages: messages,
-  });
+  try {
+    const { messages } = await req.json();
 
-  const stream = OpenAIStream(response);
-  return new StreamingTextResponse(stream);
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      stream: true,
+      messages: messages,
+    });
+
+    const stream = OpenAIStream(response);
+    return new StreamingTextResponse(stream);
+  } catch (error) {
+    console.error('API error:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
