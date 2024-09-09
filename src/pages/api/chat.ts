@@ -16,7 +16,7 @@ export default async function handler(
   try {
     const { messages } = req.body;
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-3.5-turbo',
       messages,
     });
 
