@@ -6,10 +6,16 @@ import ReactMarkdown from 'react-markdown';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { messages, input, handleInputChange, handleSubmit, setInput } = useChat({
     api: '/api/chat',
     onResponse: () => {
       setIsLoading(false);
+    },
+    onFinish: () => {
+      scrollToBottom();
     },
     onError: (error) => {
       console.error('Chat error:', error);
@@ -17,9 +23,6 @@ export default function Home() {
       alert('오류가 발생했습니다: ' + error.message);
     },
   });
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,20 +36,22 @@ export default function Home() {
     textareaRef.current?.focus();
   }, []);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (input.trim()) {
+    if (input.trim() && !isLoading) {
       setIsLoading(true);
-      handleSubmit(e);
+      const currentInput = input.trim();
+      setInput(''); // 입력 필드를 즉시 초기화
+      setTimeout(() => {
+        handleSubmit(e, { data: { content: currentInput } });
+      }, 0);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (input.trim()) {
-        onSubmit(e as any);
-      }
+      handleFormSubmit(e as any);
     }
   };
 
@@ -54,19 +59,19 @@ export default function Home() {
     <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">ChatChat</h1>
       
-      <div className="flex-1 overflow-y-auto mb-4 flex flex-col-reverse">
-        <div ref={messagesEndRef} />
-        {messages.slice().reverse().map((message, i) => (
+      <div className="flex-1 overflow-y-auto mb-4">
+        {messages.map((message, i) => (
           <div key={i} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'} message`}>
               <ReactMarkdown>{message.content}</ReactMarkdown>
             </span>
           </div>
         ))}
-        {isLoading && <div className="text-center mb-4">로딩 중...</div>}
+        {isLoading && <div className="text-center">로딩 중...</div>}
+        <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={onSubmit} className="flex">
+      <form onSubmit={handleFormSubmit} className="flex">
         <textarea
           ref={textareaRef}
           value={input}
