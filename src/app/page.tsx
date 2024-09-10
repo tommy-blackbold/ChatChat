@@ -3,12 +3,46 @@
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useChat, Message } from 'ai/react';
 import ReactMarkdown from 'react-markdown';
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Image from 'next/image';
+
+const assistantMessageStyle = {
+  lineHeight: '1.65',
+  paddingLeft: '8px',
+  paddingRight: '8px'
+};
+
+const userMessageStyle = {
+  lineHeight: '1.65',
+  paddingLeft: '8px',
+  paddingRight: '8px',
+  whiteSpace: 'pre-wrap' as const
+};
+
+const codeStyle = {
+  fontSize: '13px'
+};
+
+const mathBlockStyle = {
+  backgroundColor: '#1e1e1e',
+  color: '#d4d4d4',
+  fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
+  fontSize: '13px',
+  padding: '1em',
+  borderRadius: '5px',
+  overflowX: 'auto' as const,
+  margin: '0.5em 0'
+};
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isSubmittingRef = useRef(false);
 
   const { messages, append } = useChat({
     api: '/api/chat',
@@ -21,7 +55,7 @@ export default function Home() {
     onError: (error) => {
       console.error('Chat error:', error);
       setIsLoading(false);
-      alert('채팅 오류가 발생했습니다: ' + error.message);
+      alert('오류가 발생했습니다: ' + error.message);
     },
   });
 
@@ -38,22 +72,41 @@ export default function Home() {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
+    if (!isSubmittingRef.current) {
+      setInputValue(e.target.value);
+    }
+  };
+
+  const clearInput = () => {
+    isSubmittingRef.current = true;
+    setInputValue('');
+    if (textareaRef.current) {
+      textareaRef.current.value = '';
+    }
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.value = '';
+        textareaRef.current.focus();
+      }
+      isSubmittingRef.current = false;
+    });
   };
 
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (inputValue.trim() && !isLoading) {
+    if (inputValue.trim() && !isLoading && !isSubmittingRef.current) {
       setIsLoading(true);
       const currentInput = inputValue.trim();
-      setInputValue(''); // 입력값을 즉시 비웁니다.
-      if (textareaRef.current) {
-        textareaRef.current.value = ''; // DOM에서도 즉시 비웁니다.
-      }
+      clearInput();
 
       const userMessage: Message = { role: 'user', content: currentInput };
-      await append(userMessage);
-      setIsLoading(false);
+      try {
+        await append(userMessage);
+      } catch (error) {
+        console.error('Error appending message:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -64,35 +117,84 @@ export default function Home() {
     }
   };
 
+  const renderMessage = (message: Message) => {
+    const messageStyle = message.role === 'user' ? userMessageStyle : assistantMessageStyle;
+    
+    return (
+      <div style={messageStyle}>
+        {message.role === 'assistant' && (
+          <div style={{ marginBottom: '10px' }}>
+            <Image
+              src="/javis.png"
+              width={22}
+              height={22}
+              alt="Javis AI"
+              style={{ verticalAlign: 'middle', display: 'inline-block' }}
+            />
+            <span style={{ fontWeight: 'bold', fontSize: '10pt', verticalAlign: 'middle', marginLeft: '5px' }}>자비스 AI</span>
+          </div>
+        )}
+        {message.role === 'user' ? (
+          <div>{message.content}</div>
+        ) : (
+          <ReactMarkdown
+            components={{
+              code({ node, inline, className, children, ...props }) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                    style={tomorrow}
+                    customStyle={codeStyle}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">ChatChat</h1>
+      <h1 className="text-2xl font-bold mb-4">자비스 AI</h1>
       
       <div className="flex-1 overflow-y-auto mb-4">
         {messages.map((message, i) => (
           <div key={i} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'} message`}>
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+              {renderMessage(message)}
             </span>
           </div>
         ))}
-        {isLoading && <div className="text-center">처리 중...</div>}
+        {isLoading && <div className="text-center">로딩 중...</div>}
         <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={handleFormSubmit} className="flex flex-col mb-4">
+      <form onSubmit={handleFormSubmit} className="flex">
         <textarea
           ref={textareaRef}
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요..."
-          className="w-full p-2 border rounded mb-2"
-          rows={3}
+          className="flex-1 p-2 border rounded-l"
+          rows={1}
         />
         <button 
           type="submit" 
-          className="bg-blue-500 text-white p-2 rounded"
+          className="bg-blue-500 text-white p-2 rounded-r"
           disabled={isLoading || !inputValue.trim()}
         >
           {isLoading ? '전송 중...' : '전송'}
