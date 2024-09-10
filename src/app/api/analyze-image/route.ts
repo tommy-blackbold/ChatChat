@@ -28,7 +28,7 @@ export async function POST(req: Request) {
           role: "user",
           content: [
             { type: "text", text: "이 이미지에 무엇이 있나요?" },
-            { type: "image_url", image_url: fullImageUrl },
+            { type: "image_url", image_url: { url: fullImageUrl } },
           ],
         },
       ],
