@@ -92,6 +92,13 @@ export default function Home() {
     });
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const message = formData.get('message') as string;
+    // ... 기존 코드 ...
+  };
+
   const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading && !isSubmittingRef.current) {
@@ -99,7 +106,11 @@ export default function Home() {
       const currentInput = inputValue.trim();
       clearInput();
 
-      const userMessage: Message = { role: 'user', content: currentInput };
+      const userMessage: Message = {
+        id: Date.now().toString(), // 고유한 ID 생성
+        role: 'user',
+        content: currentInput
+      };
       try {
         await append(userMessage);
       } catch (error) {
@@ -139,7 +150,7 @@ export default function Home() {
         ) : (
           <ReactMarkdown
             components={{
-              code({ node, inline, className, children, ...props }) {
+              code({ node, inline, className, children, ...props }: any) {
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
                   <SyntaxHighlighter
@@ -197,7 +208,7 @@ export default function Home() {
           className="bg-blue-500 text-white p-2 rounded-r"
           disabled={isLoading || !inputValue.trim()}
         >
-          {isLoading ? '전송 중...' : '전송'}
+          {isLoading ? '전송 ...' : '전송'}
         </button>
       </form>
     </div>
